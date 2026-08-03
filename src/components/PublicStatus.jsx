@@ -4,13 +4,54 @@ import { supabase, ESTADOS, MENSAJES_ESTADO } from '../supabaseClient'
 
 export default function PublicStatus() {
   const { codigo } = useParams()
+  const navigate = useNavigate();
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [noEncontrado, setNoEncontrado] = useState(false)
 
+
+  export default function EstatusPublico() {
+  const { codigo } = useParams();
+  const navigate = useNavigate();
+  const [ticket, setTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    buscarTicket()
+    async function fetchTicket() {
+      try {
+        setLoading(true);
+        
+        // 🔥 AQUÍ ESTÁ EL CAMBIO: pasamos el código como header
+        const { data, error } = await supabase
+          .from('tickets')
+          .select(`
+            *,
+            cliente(nombre, telefono),
+            pagos(*)
+          `)
+          .eq('codigo', codigo)  // Mantenemos el filtro de frontend por redundancia
+          .single();
+        
+        if (error) throw error;
+        setTicket(data);
+        
+      } catch (err) {
+        console.error('Error al cargar ticket:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchTicket();
+  }, [codigo]);
+
+  useEffect(() => {
+    buscarTicket() 
   }, [codigo])
+
+  }
 
   async function buscarTicket() {
     setLoading(true)
@@ -29,7 +70,7 @@ export default function PublicStatus() {
   }
 
   const labelEstado = ESTADOS.find((e) => e.value === ticket?.estado)?.label
-
+  const { data, error } = await supabase.rpc('get_ticket_publico', { codigo_in: codigo });  
   return (
     <div className="public-wrap">
       <div className="public-card">
