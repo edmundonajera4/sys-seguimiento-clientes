@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../supabaseClient';
 
 export default function PublicStatus() {
   // Obtener el código del ticket desde la URL (/estado/CODIGO)
