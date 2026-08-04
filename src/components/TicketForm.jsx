@@ -48,26 +48,19 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-    // Verifica si el cliente ya existe por telefono
-    let { data: clienteData, error: clienteError } = await supabase
-        .from('clientes')
-        .select('id') //TODO: Con el * se agregan todos los campos
-        .eq('telefono', cliente.telefono)
-        .single();
-    
-        // Si no existe se crea
-
-
+    // Validaciones
     if (!nombreCliente.trim() || !telefono.trim()) {
       setError('El nombre y teléfono del cliente son obligatorios.')
+      setLoading(false)
       return
     }
     if (!equipoMarca.trim() || !equipoModelo.trim() || !falla.trim()) {
       setError('Completa la marca, modelo y falla reportada del equipo.')
+      setLoading(false)
       return
     }
 
@@ -75,25 +68,39 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
 
     // 1. Obtener o crear cliente
     let clienteId = clienteEncontrado?.id
+    let nombreFinal = nombreCliente.trim()
 
     if (!clienteId) {
+      // Cliente nuevo, crearlo
       const { data: nuevoCliente, error: errCliente } = await supabase
         .from('clientes')
-        .insert({ nombre: nombreCliente.trim(), 
+        .insert({ 
+          nombre: nombreFinal, 
           telefono: telefono.trim(), 
-          email: emailCliente.trim() || null })
+          email: emailCliente.trim() || null 
+        })
         .select()
         .single()
 
       if (errCliente) {
         setError('No se pudo registrar al cliente: ' + errCliente.message)
         setGuardando(false)
+        setLoading(false)
         return
       }
       clienteId = nuevoCliente.id
+    } else {
+      // Cliente existente, actualizar datos si cambió
+      await supabase
+        .from('clientes')
+        .update({ 
+          nombre: nombreFinal,
+          email: emailCliente.trim() || null
+        })
+        .eq('id', clienteId)
     }
 
-    // 2. Crear el ticket
+    // 2. Crear el ticket con los nuevos campos (serial e IMEI)
     const codigo = generarCodigoTicket()
     const { data: nuevoTicket, error: errTicket } = await supabase
       .from('tickets')
@@ -102,8 +109,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         cliente_id: clienteId,
         equipo_marca: equipoMarca.trim(),
         equipo_modelo: equipoModelo.trim(),
-        numero_serie: numero_serie.trim() || null,
-        imei: imei.trim() || null,
+        numero_serie: numero_serie.trim() || null,  // 👈 NUEVO
+        imei: imei.trim() || null,                   // 👈 NUEVO
         falla_reportada: falla.trim(),
         costo_total: costoTotal ? parseFloat(costoTotal) : null,
         abono: abono ? parseFloat(abono) : 0,
@@ -114,18 +121,24 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     if (errTicket) {
       setError('No se pudo crear el ticket: ' + errTicket.message)
       setGuardando(false)
+      setLoading(false)
       return
-    } else {
-      setLoading(false) //TODO se rompe el loading si todo sale bien
     }
+
+    setLoading(false)
 
     // 3. Si hubo abono inicial, registrarlo también en la tabla de pagos
     if (abono && parseFloat(abono) > 0) {
-      await supabase.from('pagos').insert({
+      const { error: pagoError } = await supabase.from('pagos').insert({
         ticket_id: nuevoTicket.id,
         monto: parseFloat(abono),
         tipo: 'abono',
       })
+      
+      if (pagoError) {
+        console.warn('Error al registrar abono:', pagoError.message)
+        // Advertencia no crítica, el ticket se creó correctamente
+      }
     }
 
     // 4. Generar el QR con la URL pública de seguimiento
@@ -136,13 +149,12 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       id: nuevoTicket.id,
       codigo: nuevoTicket.codigo,
       telefono: telefono.trim(),
-      nombreCliente: nombreCliente.trim(),
+      nombreCliente: nombreFinal,
       equipo: `${equipoMarca.trim()} ${equipoModelo.trim()}`,
       trabajador: usuarioNombre || '—',
     })
 
     setGuardando(false)
-    
   }
 
   function imprimirTicket() {
@@ -291,46 +303,46 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <label htmlFor="modelo">Modelo</label>
               <input id="modelo" value={equipoModelo} onChange={(e) => setEquipoModelo(e.target.value)} placeholder="Ej. Galaxy A54" />
             </div>
-            <div>
-              <label htmlFor="numero_serie" className="block text-sm font-medium mb-1">
-              Número de Serie <span className="text-gray-400 font-normal">(opcional)</span>
-              </label>
-              <input
-              id="numero_serie"
-              type="text"
-              value={numero_serie}
-              onChange={(e) => setNumeroSerie(e.target.value)}
-              maxLength={50}
-              placeholder="Ej: ABC123XYZ789"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:border-purple-500"
+            {/* 👇 CAMPOS NUEVOS: SERIAL Y IMEI */}
+            <div className="field">
+              <label htmlFor="numero_serie">Número de Serie</label>
+              <input 
+                id="numero_serie"
+                type="text"
+                value={numero_serie}
+                onChange={(e) => setNumeroSerie(e.target.value)}
+                maxLength={50}
+                placeholder="Ej: ABC123XYZ789"
               />
-          </div>
-          <div>
-            <label htmlFor="imei" className="block text-sm font-medium mb-1">
-              IMEI <span className="text-gray-400 font-normal">(opcional)</span>
-            </label>
-            <input
-              id="imei"
-              type="tel"
-              value={imei}
-              onChange={(e) => {
-                // Solo permitir números
-                const valor = e.target.value.replace(/\D/g, '');
-                if (valor.length <= 17) setImei(valor);
-              }}
-              maxLength={17}
-              placeholder="15-17 dígitos"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:border-purple-500"
-              title="Ingresa solo números (15-17 dígitos)"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Estándar GSM. Solo ingresa números.
-            </p>
-          </div>
+            </div>
+            <div className="field">
+              <label htmlFor="imei">IMEI</label>
+              <input
+                id="imei"
+                type="tel"
+                value={imei}
+                onChange={(e) => {
+                  const valor = e.target.value.replace(/\D/g, '');
+                  if (valor.length <= 17) setImei(valor);
+                }}
+                maxLength={17}
+                placeholder="15-17 dígitos"
+                title="Ingresa solo números (15-17 dígitos)"
+              />
+              <p className="text-xs text-gray-500 mt-1" style={{marginTop: '4px', fontSize: '11px'}}>
+                Estándar GSM. Solo ingresa números.
+              </p>
+            </div>
           </div>
           <div className="field">
             <label htmlFor="falla">Falla reportada</label>
-            <textarea id="falla" rows={3} value={falla} onChange={(e) => setFalla(e.target.value)} placeholder="Descripción de lo que reporta el cliente" />
+            <textarea 
+              id="falla" 
+              rows={3} 
+              value={falla} 
+              onChange={(e) => setFalla(e.target.value)} 
+              placeholder="Descripción de lo que reporta el cliente" 
+            />
           </div>
         </div>
 
