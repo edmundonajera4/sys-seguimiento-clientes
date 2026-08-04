@@ -1,0 +1,333 @@
+/* src/components/PublicStatus.css */
+
+/* Contenedor principal centrado */
+.public-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+}
+
+/* Tarjeta principal */
+.public-card {
+  width: 100%;
+  max-width: 480px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Brand/Logo */
+.public-brand {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #6d4aff;
+  margin-bottom: 20px;
+}
+
+/* Badges de estado */
+.public-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 24px;
+}
+
+.public-badge-recibido,
+.public-badge-diagnostico,
+.public-badge-reparacion {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.public-badge-espera_refaccion {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.public-badge-listo,
+.public-badge-entregado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Información del cliente */
+.public-client-info {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.public-client-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.public-client-phone {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Equipo */
+.public-equipo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  text-align: center;
+  margin: 0 0 12px 0;
+}
+
+/* Detalles del dispositivo (serial/IMEI) */
+.public-device-details {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.public-detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin: 0 0 6px 0;
+}
+
+.public-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.public-detail-label {
+  color: #6b7280;
+}
+
+.public-detail-value {
+  color: #1f2937;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 13px;
+}
+
+/* Falla reportada */
+.public-falla {
+  font-size: 14px;
+  color: #4b5563;
+  background: #fffbeb;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* Mensaje */
+.public-mensaje {
+  font-size: 15px;
+  color: #4b5563;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Sección de cuenta/cobros */
+.public-cuenta {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.public-cuenta-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.public-cuenta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.public-cuenta-row:last-child {
+  border-bottom: none;
+}
+
+.public-cuenta-abono {
+  background: #f0fdf4;
+  margin: 0 -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Saldo */
+.public-cuenta-saldo {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid #ddd;
+  border-bottom: none;
+}
+
+.public-saldo-ok .public-saldo-amount {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.public-saldo-amount {
+  font-weight: 700;
+  color: #6d4aff;
+}
+
+/* Historial de pagos desplegable */
+.public-payments-summary {
+  margin-bottom: 16px;
+}
+
+.public-payments-summary summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #6b7280;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.public-payments-summary summary::-webkit-details-marker {
+  display: none;
+}
+
+.public-payments-summary summary:hover {
+  color: #1f2937;
+}
+
+.public-payments-list {
+  margin-top: 8px;
+  padding: 0 8px;
+}
+
+.public-payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.public-payment-item:last-child {
+  margin-bottom: 0;
+}
+
+.public-payment-type {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.public-payment-amount {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.public-payment-date {
+  color: #9ca3af;
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+/* Fecha de recepción */
+.public-reception-date {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* Código del ticket */
+.public-codigo {
+  text-align: center;
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0 0 20px 0;
+}
+
+.public-codigo code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #6d4aff;
+}
+
+/* Estados vacíos/error */
+.public-loading .public-brand {
+  color: #9ca3af;
+}
+
+.public-empty {
+  text-align: center;
+  padding: 48px 32px;
+}
+
+.public-error {
+  font-size: 16px;
+  color: #ef4444;
+  margin: 16px 0 8px 0;
+}
+
+.public-muted {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.public-error strong {
+  color: #dc2626;
+}
+
+/* Footer */
+.public-footer {
+  text-align: center;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .public-card {
+    padding: 24px 16px;
+  }
+  
+  .public-equipo {
+    font-size: 16px;
+  }
+  
+  .public-cuenta {
+    padding: 16px;
+  }
+}

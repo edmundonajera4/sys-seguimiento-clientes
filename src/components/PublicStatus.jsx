@@ -14,6 +14,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
+
+import './PublicStatus.css';
+
 export default function PublicStatus() {
   // Obtener el código del ticket desde la URL (/estado/CODIGO)
   const { codigo } = useParams();
@@ -222,7 +225,7 @@ export default function PublicStatus() {
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Equip</span>
+              <span className="text-gray-500">Equipo</span>
               <p className="font-medium">{ticket.equipo_marca} {ticket.equipo_modelo}</p>
             </div>
             <div>
