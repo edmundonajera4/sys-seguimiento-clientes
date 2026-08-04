@@ -10,11 +10,16 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   const [emailCliente, setEmailCliente] = useState('')
   const [buscandoCliente, setBuscandoCliente] = useState(false)
 
+
   const [equipoMarca, setEquipoMarca] = useState('')
   const [equipoModelo, setEquipoModelo] = useState('')
+  const [numero_serie, setNumeroSerie] = useState('')
+  const [imei, setImei] = useState('') = useState('')
   const [falla, setFalla] = useState('')
   const [costoTotal, setCostoTotal] = useState('')
   const [abono, setAbono] = useState('')
+
+  const [loading, setLoading] = useState(false)
 
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -43,8 +48,19 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    // Verifica si el cliente ya existe por telefono
+    let { data: clienteData, error: clienteError } = await supabase
+        .from('clientes')
+        .select('*, id') //TODO: Con el * se agregan todos los campos
+        .eq('telefono', cliente.telefono)
+        .single();
+    
+        // Si no existe se crea
+
 
     if (!nombreCliente.trim() || !telefono.trim()) {
       setError('El nombre y teléfono del cliente son obligatorios.')
@@ -63,7 +79,9 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     if (!clienteId) {
       const { data: nuevoCliente, error: errCliente } = await supabase
         .from('clientes')
-        .insert({ nombre: nombreCliente.trim(), telefono: telefono.trim(), email: emailCliente.trim() || null })
+        .insert({ nombre: nombreCliente.trim(), 
+          telefono: telefono.trim(), 
+          email: emailCliente.trim() || null })
         .select()
         .single()
 
@@ -84,6 +102,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         cliente_id: clienteId,
         equipo_marca: equipoMarca.trim(),
         equipo_modelo: equipoModelo.trim(),
+        numero_serie: numero_serie.trim() || null,
+        imei: imei.trim() || null,
         falla_reportada: falla.trim(),
         costo_total: costoTotal ? parseFloat(costoTotal) : null,
         abono: abono ? parseFloat(abono) : 0,
@@ -95,6 +115,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       setError('No se pudo crear el ticket: ' + errTicket.message)
       setGuardando(false)
       return
+    } else {
+      setLoading(false) //TODO se rompe el loading si todo sale bien
     }
 
     // 3. Si hubo abono inicial, registrarlo también en la tabla de pagos
@@ -120,6 +142,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     })
 
     setGuardando(false)
+    
   }
 
   function imprimirTicket() {
@@ -268,6 +291,42 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <label htmlFor="modelo">Modelo</label>
               <input id="modelo" value={equipoModelo} onChange={(e) => setEquipoModelo(e.target.value)} placeholder="Ej. Galaxy A54" />
             </div>
+            <div>
+              <label htmlFor="numero_serie" className="block text-sm font-medium mb-1">
+              Número de Serie <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <input
+              id="numero_serie"
+              type="text"
+              value={numero_serie}
+              onChange={(e) => setNumeroSerie(e.target.value)}
+              maxLength={50}
+              placeholder="Ej: ABC123XYZ789"
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:border-purple-500"
+              />
+          </div>
+          <div>
+            <label htmlFor="imei" className="block text-sm font-medium mb-1">
+              IMEI <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              id="imei"
+              type="tel"
+              value={imei}
+              onChange={(e) => {
+                // Solo permitir números
+                const valor = e.target.value.replace(/\D/g, '');
+                if (valor.length <= 17) setImei(valor);
+              }}
+              maxLength={17}
+              placeholder="15-17 dígitos"
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:border-purple-500"
+              title="Ingresa solo números (15-17 dígitos)"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Estándar GSM. Solo ingresa números.
+            </p>
+          </div>
           </div>
           <div className="field">
             <label htmlFor="falla">Falla reportada</label>

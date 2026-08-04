@@ -146,7 +146,7 @@ export default function TicketDetail({ ticketId, onBack }) {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-muted" style={{ margin: 0 }}>Equipo</p>
-            <p style={{ margin: '4px 0 0', fontWeight: 600 }}>{ticket.equipo_marca} {ticket.equipo_modelo}</p>
+            <p style={{ margin: '4px 0 0', fontWeight: 600 }}>{ticket.equipo_marca} {ticket.equipo_modelo} {ticket.numero_serie} {ticket.imei}</p>
           </div>
           <div>
             <label style={{ marginBottom: 4 }}>Estado</label>

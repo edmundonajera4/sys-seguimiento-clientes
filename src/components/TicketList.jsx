@@ -81,6 +81,8 @@ export default function TicketList({ onSelectTicket }) {
                 <th>Código</th>
                 <th>Cliente</th>
                 <th>Equipo</th>
+                <th>Serial</th>
+                <th>IMEI</th>
                 <th>Estado</th>
                 <th>Saldo</th>
                 <th>Recibido</th>
@@ -94,6 +96,8 @@ export default function TicketList({ onSelectTicket }) {
                     <td className="mono">{t.codigo}</td>
                     <td>{t.clientes?.nombre}</td>
                     <td>{t.equipo_marca} {t.equipo_modelo}</td>
+                    <td className="font-mono text-sm text-gray-700">{t.numero_serie || '-'}</td>
+                    <td className="font-mono text-sm text-gray-700">{t.imei || '-'}</td>
                     <td><span className={`badge badge-${t.estado}`}>{labelEstado(t.estado)}</span></td>
                     <td>{saldo != null ? `$${saldo.toFixed(2)}` : '—'}</td>
                     <td className="text-muted">{new Date(t.fecha_recepcion).toLocaleDateString('es-MX')}</td>

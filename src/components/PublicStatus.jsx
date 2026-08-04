@@ -230,6 +230,14 @@ export default function PublicStatus() {
               <p className="font-medium">{ticket.falla_reportada}</p>
             </div>
             <div>
+              <span className="text-gray-500">Número de serie:</span>
+              <p className="font-mono font-medium">{ticket.numero_serie}</p>
+            </div>
+            <div>
+              <span className="text-gray-500">IMEI:</span>
+              <p className="font-mono font-medium">{ticket.imei}</p>
+            </div>
+            <div>
               <span className="text-gray-500">Fecha de recepción:</span>
               <p className="font-medium">{formatDate(ticket.fecha_recepcion)}</p>
             </div>
