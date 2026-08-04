@@ -14,7 +14,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   const [equipoMarca, setEquipoMarca] = useState('')
   const [equipoModelo, setEquipoModelo] = useState('')
   const [numero_serie, setNumeroSerie] = useState('')
-  const [imei, setImei] = useState('') = useState('')
+  const [imei, setImei] = useState('')
   const [falla, setFalla] = useState('')
   const [costoTotal, setCostoTotal] = useState('')
   const [abono, setAbono] = useState('')
