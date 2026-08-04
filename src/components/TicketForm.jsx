@@ -55,7 +55,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     // Verifica si el cliente ya existe por telefono
     let { data: clienteData, error: clienteError } = await supabase
         .from('clientes')
-        .select('*, id') //TODO: Con el * se agregan todos los campos
+        .select('id') //TODO: Con el * se agregan todos los campos
         .eq('telefono', cliente.telefono)
         .single();
     
