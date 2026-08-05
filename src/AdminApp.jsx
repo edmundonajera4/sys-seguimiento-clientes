@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
 import TicketList from './components/TicketList'
-//import TicketsStats from './components/TicketsStats'
 import TicketForm from './components/TicketForm'
 import TicketDetail from './components/TicketDetail'
 import Balance from './components/Balance'
@@ -35,7 +34,6 @@ export default function AdminApp() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Navigate to="/tickets" />} />
-        <Route path="/dashboard" element={<TicketList />} />
         <Route path="/tickets" element={<TicketList />} />
         <Route path="/tickets/nuevo" element={<TicketForm onCreated={(id) => window.location.href = '/tickets/' + id} usuarioNombre={user.email} />} />
         <Route path="/tickets/:id" element={<TicketDetail />} />
