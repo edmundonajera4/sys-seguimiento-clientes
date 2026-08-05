@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../supabaseClient'
 import { NEGOCIO } from '../config'
 
 export default function Navbar() {
-  const user = useAuth()
+  const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingRole, setLoadingRole] = useState(true)
 
+  // Cargar usuario autenticado
   useEffect(() => {
-    async function checkUserRole() {
-      if (!user) {
-        setIsAdmin(false)
+    async function getSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user || null)
+      
+      if (!session?.user) {
         setLoadingRole(false)
         return
       }
 
+      // Verificar rol
       try {
         const { data, error } = await supabase
           .from('usuarios')
           .select('rol')
-          .eq('auth_user_id', user.id)
+          .eq('auth_user_id', session.user.id)
           .single()
 
         if (error) {
@@ -38,8 +41,24 @@ export default function Navbar() {
       }
     }
 
-    checkUserRole()
-  }, [user])
+    getSession()
+
+    // Escuchar cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+      if (!session?.user) {
+        setIsAdmin(false)
+        setLoadingRole(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
 
   return (
     <nav className="navbar">
@@ -62,7 +81,7 @@ export default function Navbar() {
           )}
           
           <Link to="/password">Contraseña</Link>
-          <Link to="/logout">Salir</Link>
+          <button onClick={handleLogout}>Salir</button>
         </div>
       ) : (
         <div className="navbar-menu">
