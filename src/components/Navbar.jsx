@@ -1,52 +1,74 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../supabaseClient'
+import { NEGOCIO } from '../config'
 
-export default function Navbar({ view, setView, usuarioNombre, usuarioRol }) {
-  async function handleLogout() {
-    await supabase.auth.signOut()
-  }
+export default function Navbar() {
+  const user = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [loadingRole, setLoadingRole] = useState(true)
+
+  useEffect(() => {
+    async function checkUserRole() {
+      if (!user) {
+        setIsAdmin(false)
+        setLoadingRole(false)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('rol')
+          .eq('auth_user_id', user.id)
+          .single()
+
+        if (error) {
+          console.error('Error al obtener rol:', error.message)
+          setIsAdmin(false)
+        } else {
+          setIsAdmin(data?.rol === 'admin')
+        }
+      } catch (err) {
+        console.error('Error inesperado:', err.message)
+        setIsAdmin(false)
+      } finally {
+        setLoadingRole(false)
+      }
+    }
+
+    checkUserRole()
+  }, [user])
 
   return (
-    <div className="navbar">
+    <nav className="navbar">
       <div className="navbar-brand">
-        <span className="dot" />
-        Taller — Panel
+        <Link to="/">
+          <h1>{NEGOCIO.nombre}</h1>
+        </Link>
       </div>
 
-      <div className="navbar-links">
-        <button
-          className={`nav-link ${view === 'lista' ? 'active' : ''}`}
-          onClick={() => setView('lista')}
-        >
-          Tickets
-        </button>
-        <button
-          className={`nav-link ${view === 'nuevo' ? 'active' : ''}`}
-          onClick={() => setView('nuevo')}
-        >
-          Nuevo ticket
-        </button>
-        <button
-          className={`nav-link ${view === 'balance' ? 'active' : ''}`}
-          onClick={() => setView('balance')}
-        >
-          Balance
-        </button>
-        {usuarioRol === 'admin' && (
-          <button
-            className={`nav-link ${view === 'admins' ? 'active' : ''}`}
-            onClick={() => setView('admins')}
-          >
-            Administradores
-          </button>
-        )}
-      </div>
-
-      <div className="navbar-user">
-        <span>{usuarioNombre || 'Staff'}</span>
-        <button className="btn btn-secondary" onClick={handleLogout}>
-          Cerrar sesión
-        </button>
-      </div>
-    </div>
+      {user ? (
+        <div className="navbar-menu">
+          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/tickets">Tickets</Link>
+          <Link to="/balance">Balance</Link>
+          
+          {!loadingRole && isAdmin && (
+            <Link to="/balance-historico" className="admin-link">
+              Balance Histórico
+            </Link>
+          )}
+          
+          <Link to="/password">Contraseña</Link>
+          <Link to="/logout">Salir</Link>
+        </div>
+      ) : (
+        <div className="navbar-menu">
+          <Link to="/login">Login</Link>
+        </div>
+      )}
+    </nav>
   )
 }

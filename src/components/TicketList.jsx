@@ -6,6 +6,7 @@ export default function TicketList({ onSelectTicket }) {
   const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
+  
 
   useEffect(() => {
     cargarTickets()
@@ -16,7 +17,7 @@ export default function TicketList({ onSelectTicket }) {
 
     let query = supabase
       .from('tickets')
-      .select('id, codigo, equipo_marca, equipo_modelo, estado, costo_total, abono, fecha_recepcion, clientes(nombre, telefono)')
+      .select('id, codigo, equipo_marca, equipo_modelo, estado, costo_total, abono, fecha_recepcion, clientes(nombre, telefono), numero_serie, imei')
       .order('fecha_recepcion', { ascending: false })
 
     if (filtroEstado !== 'todos') {
@@ -29,6 +30,8 @@ export default function TicketList({ onSelectTicket }) {
     setLoading(false)
   }
 
+
+
   const ticketsFiltrados = tickets.filter((t) => {
     if (!busqueda.trim()) return true
     const texto = busqueda.toLowerCase()
@@ -37,6 +40,11 @@ export default function TicketList({ onSelectTicket }) {
       t.clientes?.nombre?.toLowerCase().includes(texto) ||
       t.equipo_modelo?.toLowerCase().includes(texto)
     )
+
+    const { data } = await supabase
+      .from('tickets')
+      .select('*, cliente(nombre)')
+      .or(`numero_serie.ilike.%${busqueda}%,imei.ilike.%${busqueda}%`);
   })
 
   function labelEstado(valor) {
@@ -84,6 +92,8 @@ export default function TicketList({ onSelectTicket }) {
                 <th>Serial</th>
                 <th>IMEI</th>
                 <th>Estado</th>
+                <th>Serial</th>
+                <th>IMEI</th>
                 <th>Saldo</th>
                 <th>Recibido</th>
               </tr>
@@ -96,9 +106,15 @@ export default function TicketList({ onSelectTicket }) {
                     <td className="mono">{t.codigo}</td>
                     <td>{t.clientes?.nombre}</td>
                     <td>{t.equipo_marca} {t.equipo_modelo}</td>
-                    <td className="font-mono text-sm text-gray-700">{t.numero_serie || '-'}</td>
-                    <td className="font-mono text-sm text-gray-700">{t.imei || '-'}</td>
-                    <td><span className={`badge badge-${t.estado}`}>{labelEstado(t.estado)}</span></td>
+                    <td className="font-mono" style={{ fontFamily: 'monospace' }}>
+                      {ticket.numero_serie || '-'}
+                    </td>
+                    <td className="font-mono" style={{ fontFamily: 'monospace' }}>
+                      <td>{t.imei || '-'}</td>
+                    </td>
+                    <td><span className={`badge badge-${t.estado}`}>
+                      {labelEstado(t.estado)}</span>
+                      </td>
                     <td>{saldo != null ? `$${saldo.toFixed(2)}` : '—'}</td>
                     <td className="text-muted">{new Date(t.fecha_recepcion).toLocaleDateString('es-MX')}</td>
                   </tr>
