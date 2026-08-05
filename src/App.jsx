@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import AdminApp from './AdminApp'
 import PublicStatus from './components/PublicStatus'
 import ActualizarPassword from './components/ActualizarPassword'
+import BalanceHistorico from './components/BalanceHistorico'
 
 export default function App() {
   return (
