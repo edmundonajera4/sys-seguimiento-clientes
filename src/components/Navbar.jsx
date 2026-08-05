@@ -9,7 +9,6 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingRole, setLoadingRole] = useState(true)
 
-  // Verificar rol del usuario en base de datos
   useEffect(() => {
     async function checkUserRole() {
       if (!user) {
@@ -56,7 +55,6 @@ export default function Navbar() {
           <Link to="/tickets">Tickets</Link>
           <Link to="/balance">Balance</Link>
           
-          {/* NUEVO: Enlace solo visible para admins */}
           {!loadingRole && isAdmin && (
             <Link to="/balance-historico" className="admin-link">
               Balance Histórico
