@@ -14,6 +14,9 @@ export default function App() {
 
       {/* Todo lo demás es el panel administrativo, protegido con login */}
       <Route path="/*" element={<AdminApp />} />
+
+      {/* Ruta al balance historico de la app */}
+      <Route path="/balance-historico" element={<BalanceHistorico />} />
     </Routes>
   )
 }
