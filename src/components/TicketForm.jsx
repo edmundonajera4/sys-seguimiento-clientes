@@ -5,7 +5,6 @@ import { NEGOCIO } from '../config'
 
 export default function TicketForm({ onCreated, usuarioNombre }) {
   const [telefono, setTelefono] = useState('')
-  const [telefonoConPrefijo, setTelefonoConPrefijo] = useState('')  // ← SOLO UNA VEZ AQUÍ
   const [clienteEncontrado, setClienteEncontrado] = useState(null)
   const [nombreCliente, setNombreCliente] = useState('')
   const [emailCliente, setEmailCliente] = useState('')
@@ -22,36 +21,13 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   const [abono, setAbono] = useState('')
 
   const [loading, setLoading] = useState(false)
-<<<<<<< HEAD
-=======
 
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   // Ticket recién creado, para mostrar la pantalla de QR + WhatsApp
   const [ticketCreado, setTicketCreado] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState('')
-
-  // Manejar teléfono con +52 automático
-  function manejarTelefono(value) {
-    const soloNumeros = value.replace(/\D/g, '')
-    
-    let telefonoFinal = value
-    
-    if (soloNumeros.length === 10 && !value.startsWith('+')) {
-      telefonoFinal = '+52' + soloNumeros
-      setTelefonoConPrefijo(telefonoFinal)
-    } else if (value.startsWith('+52')) {
-      setTelefonoConPrefijo(value)
-    } else if (value.startsWith('+')) {
-      setTelefonoConPrefijo(value)
-    } else {
-      setTelefonoConPrefijo('')
-    }
-    
-    setTelefono(value)
-  }
 
   async function buscarClientePorTelefono() {
     // Usa el teléfono SIN el prefijo para buscar en la base de datos
@@ -61,9 +37,6 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     if (!telefonoBusqueda) return
     
     setBuscandoCliente(true)
-    
-    const telefonoBusqueda = telefono.replace(/\D/g, '').slice(-10)
-    
     const { data } = await supabase
       .from('clientes')
       .select('*')
@@ -75,15 +48,10 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       setNombreCliente(data.nombre)
       setEmailCliente(data.email || '')
       
-<<<<<<< HEAD
-      if (data.telefono.length === 10 && !telefonoConPrefijo.includes('+')) {
-        setTelefonoConPrefijo('+52' + data.telefono)
-=======
       // Mostrar el teléfono con prefijo si estaba incompleto
       if (data.telefono.length === 10 && !telefonoConPrefijo.includes('+')) {
         const nuevoConPrefijo = '+52' + data.telefono
         setTelefonoConPrefijo(nuevoConPrefijo)
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
       }
     } else {
       setClienteEncontrado(null)
@@ -138,24 +106,20 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
 
     setGuardando(true)
 
+    // 1. Obtener o crear cliente
     let clienteId = clienteEncontrado?.id
     let nombreFinal = nombreCliente.trim()
 
     if (!clienteId) {
-<<<<<<< HEAD
-      const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10)
-      
-=======
       // Cliente nuevo, crearlo con el teléfono limpio (sin prefijos)
       // Esto facilita búsqueda y comparaciones futuras
       const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10)
 
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
       const { data: nuevoCliente, error: errCliente } = await supabase
         .from('clientes')
         .insert({ 
-          nombre: nombreFinal, 
-          telefono: telefonoLimpio,
+          nombre: nombreFinal,
+          telefono: telefonoLimpio,  // ← GUARDAR SIN PREFIJO
           email: emailCliente.trim() || null 
         })
         .select()
@@ -179,10 +143,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         .eq('id', clienteId)
     }
 
-<<<<<<< HEAD
-=======
     // 2. Crear el ticket con los nuevos campos (serial e IMEI)
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
     const codigo = generarCodigoTicket()
     const { data: nuevoTicket, error: errTicket } = await supabase
       .from('tickets')
@@ -191,13 +152,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         cliente_id: clienteId,
         equipo_marca: equipoMarca.trim(),
         equipo_modelo: equipoModelo.trim(),
-<<<<<<< HEAD
-        numero_serie: numero_serie.trim() || null,
-        imei: imei.trim() || null,
-=======
         numero_serie: numero_serie.trim() || null,  // 👈 NUEVO
         imei: imei.trim() || null,                   // 👈 NUEVO
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
         falla_reportada: falla.trim(),
         costo_total: costoTotal ? parseFloat(costoTotal) : null,
         abono: abono ? parseFloat(abono) : 0,
@@ -214,44 +170,28 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
 
     setLoading(false)
 
-<<<<<<< HEAD
-=======
     // 3. Si hubo abono inicial, registrarlo también en la tabla de pagos
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
     if (abono && parseFloat(abono) > 0) {
       const { error: pagoError } = await supabase.from('pagos').insert({
         ticket_id: nuevoTicket.id,
         monto: parseFloat(abono),
         tipo: 'abono',
       })
-<<<<<<< HEAD
-      if (pagoError) console.warn('Error al registrar abono:', pagoError.message)
-=======
       
       if (pagoError) {
         console.warn('Error al registrar abono:', pagoError.message)
         // Advertencia no crítica, el ticket se creó correctamente
       }
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
     }
 
+    // 4. Generar el QR con la URL pública de seguimiento
     const url = urlEstadoTicket(nuevoTicket.codigo)
     const dataUrl = await QRCode.toDataURL(url, { width: 320, margin: 1 })
     setQrDataUrl(dataUrl)
-
-    let telefonoWhatsapp = telefono.replace(/\D/g, '').slice(-10)
-    if (telefonoWhatsapp.length === 10) {
-      telefonoWhatsapp = '+52' + telefonoWhatsapp
-    }
-
     setTicketCreado({
       id: nuevoTicket.id,
       codigo: nuevoTicket.codigo,
-<<<<<<< HEAD
-      telefono: telefonoWhatsapp,
-=======
       telefono: telefono.trim(),
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
       nombreCliente: nombreFinal,
       equipo: `${equipoMarca.trim()} ${equipoModelo.trim()}`,
       trabajador: usuarioNombre || '—',
@@ -264,7 +204,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     const ventana = window.open('', '_blank', 'width=420,height=620')
     ventana.document.write(`
       <html>
-        <head><title>Ticket ${ticketCreado.codigo}</title>
+        <head>
+          <title>Ticket ${ticketCreado.codigo}</title>
           <style>
             body { font-family: sans-serif; text-align: center; padding: 24px; }
             img { width: 220px; height: 220px; }
@@ -279,14 +220,18 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
           <h1>${NEGOCIO.nombre}</h1>
           <p>${NEGOCIO.direccion}</p>
           <p>Tel: ${NEGOCIO.telefono}</p>
+
           <div class="divider"></div>
+
           <h2>${ticketCreado.codigo}</h2>
           <p>Escanea para ver el estatus de tu equipo</p>
           <img src="${qrDataUrl}" />
           <p>${ticketCreado.equipo}</p>
           <p>Cliente: ${ticketCreado.nombreCliente}</p>
           <p>Atendió: ${ticketCreado.trabajador}</p>
+
           <div class="divider"></div>
+
           <p class="footer">${NEGOCIO.agradecimiento}</p>
         </body>
       </html>
@@ -320,21 +265,27 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     return (
       <div className="page">
         <div className="page-header">
-          <div><h1>Ticket creado</h1><p>Imprime el QR o envía el estatus por WhatsApp.</p></div>
+          <div>
+            <h1>Ticket creado</h1>
+            <p>Imprime el QR en el recibo o envía el estatus por WhatsApp.</p>
+          </div>
         </div>
+
         <div className="card" style={{ textAlign: 'center' }}>
-          <p className="mono" style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
-            {ticketCreado.codigo}
-          </p>
-          {qrDataUrl && <img src={qrDataUrl} alt={`QR`} width={220} height={220} />}
-          <p className="text-muted" style={{ marginTop: 16 }}>
-            {ticketCreado.equipo} — {ticketCreado.nombreCliente}
-          </p>
+          <p className="mono" style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>{ticketCreado.codigo}</p>
+          {qrDataUrl && <img src={qrDataUrl} alt={`QR del ticket ${ticketCreado.codigo}`} width={220} height={220} />}
+          <p className="text-muted" style={{ marginTop: 16 }}>{ticketCreado.equipo} — {ticketCreado.nombreCliente}</p>
+
           <div className="flex gap-12" style={{ justifyContent: 'center', marginTop: 24 }}>
             <button className="btn btn-secondary" onClick={imprimirTicket}>Imprimir ticket</button>
             <button className="btn btn-primary" onClick={enviarWhatsApp}>Enviar por WhatsApp</button>
           </div>
-          <button className="nav-link" style={{ marginTop: 20 }} onClick={() => onCreated(ticketCreado.id)}>
+
+          <button
+            className="nav-link"
+            style={{ marginTop: 20 }}
+            onClick={() => onCreated(ticketCreado.id)}
+          >
             Ir al ticket →
           </button>
         </div>
@@ -345,11 +296,15 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   return (
     <div className="page">
       <div className="page-header">
-        <div><h1>Nuevo ticket</h1><p>Registra el equipo que acaba de recibirse.</p></div>
+        <div>
+          <h1>Nuevo ticket</h1>
+          <p>Registra el equipo que acaba de recibirse.</p>
+        </div>
       </div>
+
       <form onSubmit={handleSubmit}>
         {error && <div className="form-error">{error}</div>}
-        
+
         <div className="card">
           <p className="text-muted" style={{ marginTop: 0, marginBottom: 16, fontWeight: 600 }}>Datos del cliente</p>
           <div className="form-row">
@@ -363,13 +318,13 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
                 placeholder="Ej. 4491234567 (+52 se agrega automático)"
               />
               {telefonoConPrefijo && telefonoConPrefijo !== telefono && (
-                <p className="text-muted text-sm" style={{marginTop: '4px', fontSize: '12px'}}>
+                <p className="text-muted text-sm" style={{marginTop: '4px'}}>
                   📱 Guardando como: {telefonoConPrefijo}
                 </p>
               )}
               {buscandoCliente && <span className="text-muted">Buscando cliente...</span>}
               {clienteEncontrado && (
-                <span className="text-muted">Cliente existente encontrado.</span>
+                <span className="text-muted">Cliente existente encontrado: se usarán sus datos.</span>
               )}
             </div>
             <div className="field">
@@ -405,18 +360,12 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <label htmlFor="modelo">Modelo</label>
               <input id="modelo" value={equipoModelo} onChange={(e) => setEquipoModelo(e.target.value)} placeholder="Ej. Galaxy A54" />
             </div>
-<<<<<<< HEAD
-=======
             {/* 👇 CAMPOS NUEVOS: SERIAL Y IMEI */}
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
             <div className="field">
               <label htmlFor="numero_serie">Número de Serie</label>
               <input 
                 id="numero_serie"
-<<<<<<< HEAD
-=======
                 type="text"
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
                 value={numero_serie}
                 onChange={(e) => setNumeroSerie(e.target.value)}
                 maxLength={50}
@@ -427,10 +376,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <label htmlFor="imei">IMEI</label>
               <input
                 id="imei"
-<<<<<<< HEAD
-=======
                 type="tel"
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
                 value={imei}
                 onChange={(e) => {
                   const valor = e.target.value.replace(/\D/g, '');
@@ -438,15 +384,11 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
                 }}
                 maxLength={17}
                 placeholder="15-17 dígitos"
-<<<<<<< HEAD
-              />
-=======
                 title="Ingresa solo números (15-17 dígitos)"
               />
               <p className="text-xs text-gray-500 mt-1" style={{marginTop: '4px', fontSize: '11px'}}>
                 Estándar GSM. Solo ingresa números.
               </p>
->>>>>>> 5e29b3a49fdc629e49784903b43451cbba04f390
             </div>
           </div>
           <div className="field">
@@ -462,7 +404,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         </div>
 
         <div className="card">
-          <p className="text-muted" style={{ marginTop: 0, marginBottom: 16, fontWeight: 600 }}>Costos (opcional)</p>
+          <p className="text-muted" style={{ marginTop: 0, marginBottom: 16, fontWeight: 600 }}>Costos (opcional en este momento)</p>
           <div className="form-row">
             <div className="field">
               <label htmlFor="costoTotal">Costo total estimado</label>
