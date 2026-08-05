@@ -89,6 +89,8 @@ export default function TicketList({ onSelectTicket }) {
                 <th>Código</th>
                 <th>Cliente</th>
                 <th>Equipo</th>
+                <th>Serial</th>
+                <th>IMEI</th>
                 <th>Estado</th>
                 <th>Serial</th>
                 <th>IMEI</th>
