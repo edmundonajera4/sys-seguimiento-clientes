@@ -92,7 +92,3 @@ function PasswordChange() {
     </div>
   )
 }
-
-function TicketsStats() {
-  return <Navigate to="/tickets" replace />
-}
