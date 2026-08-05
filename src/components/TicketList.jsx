@@ -40,7 +40,7 @@ export default function TicketList({ onSelectTicket }) {
       t.clientes?.nombre?.toLowerCase().includes(texto) ||
       t.equipo_modelo?.toLowerCase().includes(texto)
     )
-    
+
     const { data } = await supabase
       .from('tickets')
       .select('*, cliente(nombre)')
@@ -90,6 +90,8 @@ export default function TicketList({ onSelectTicket }) {
                 <th>Cliente</th>
                 <th>Equipo</th>
                 <th>Estado</th>
+                <th>Serial</th>
+                <th>IMEI</th>
                 <th>Saldo</th>
                 <th>Recibido</th>
               </tr>
@@ -102,9 +104,15 @@ export default function TicketList({ onSelectTicket }) {
                     <td className="mono">{t.codigo}</td>
                     <td>{t.clientes?.nombre}</td>
                     <td>{t.equipo_marca} {t.equipo_modelo}</td>
-                    <td>{t.numero_serie || '-'}</td>
-                    <td>{t.imei || '-'}</td>
-                    <td><span className={`badge badge-${t.estado}`}>{labelEstado(t.estado)}</span></td>
+                    <td className="font-mono" style={{ fontFamily: 'monospace' }}>
+                      {ticket.numero_serie || '-'}
+                    </td>
+                    <td className="font-mono" style={{ fontFamily: 'monospace' }}>
+                      <td>{t.imei || '-'}</td>
+                    </td>
+                    <td><span className={`badge badge-${t.estado}`}>
+                      {labelEstado(t.estado)}</span>
+                      </td>
                     <td>{saldo != null ? `$${saldo.toFixed(2)}` : '—'}</td>
                     <td className="text-muted">{new Date(t.fecha_recepcion).toLocaleDateString('es-MX')}</td>
                   </tr>
