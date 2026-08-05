@@ -7,6 +7,8 @@ import TicketForm from './components/TicketForm'
 import TicketDetail from './components/TicketDetail'
 import Balance from './components/Balance'
 import GestionAdmins from './components/GestionAdmins'
+import Balance from './components/Balance'
+import BalanceHistorico from './components/BalanceHistorico'
 
 export default function AdminApp() {
   const [session, setSession] = useState(undefined) // undefined = cargando, null = sin sesión
