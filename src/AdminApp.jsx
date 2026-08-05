@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'  // ← REMOVER BrowserRouter de aquí
 import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
 import TicketList from './components/TicketList'
@@ -30,7 +30,7 @@ export default function AdminApp() {
   if (!user) return <Navigate to="/login" replace />
 
   return (
-    <BrowserRouter>
+    <div>  {/* ← Cambiar de <BrowserRouter> a <div> */}
       <Navbar />
       <Routes>
         <Route path="/" element={<Navigate to="/tickets" />} />
@@ -44,7 +44,7 @@ export default function AdminApp() {
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<Navigate to="/tickets" />} />
       </Routes>
-    </BrowserRouter>
+    </div>
   )
 }
 
