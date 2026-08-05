@@ -1,30 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { useAuth } from '../AuthProvider'
 import { NEGOCIO } from '../config'
 
 export default function Navbar() {
-  const [user, setUser] = useState(null)
+  const auth = useAuth()
+  const { user } = auth || {}
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingRole, setLoadingRole] = useState(true)
 
-  // Cargar usuario autenticado
   useEffect(() => {
-    async function getSession() {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user || null)
-      
-      if (!session?.user) {
+    async function checkUserRole() {
+      if (!user) {
+        setIsAdmin(false)
         setLoadingRole(false)
         return
       }
 
-      // Verificar rol
       try {
         const { data, error } = await supabase
           .from('usuarios')
           .select('rol')
-          .eq('auth_user_id', session.user.id)
+          .eq('auth_user_id', user.id)
           .single()
 
         if (error) {
@@ -41,23 +39,12 @@ export default function Navbar() {
       }
     }
 
-    getSession()
+    checkUserRole()
+  }, [user])
 
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null)
-      if (!session?.user) {
-        setIsAdmin(false)
-        setLoadingRole(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleLogout = async () => {
+  async function handleLogout() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 
   return (
