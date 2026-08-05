@@ -9,12 +9,18 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   const [nombreCliente, setNombreCliente] = useState('')
   const [emailCliente, setEmailCliente] = useState('')
   const [buscandoCliente, setBuscandoCliente] = useState(false)
+  const [telefonoConPrefijo, setTelefonoConPrefijo] = useState('')
+
 
   const [equipoMarca, setEquipoMarca] = useState('')
   const [equipoModelo, setEquipoModelo] = useState('')
+  const [numero_serie, setNumeroSerie] = useState('')
+  const [imei, setImei] = useState('')
   const [falla, setFalla] = useState('')
   const [costoTotal, setCostoTotal] = useState('')
   const [abono, setAbono] = useState('')
+
+  const [loading, setLoading] = useState(false)
 
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -25,35 +31,78 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   const [qrDataUrl, setQrDataUrl] = useState('')
 
   async function buscarClientePorTelefono() {
-    if (!telefono.trim()) return
+    // Usa el teléfono SIN el prefijo para buscar en la base de datos
+    // (los números se guardan en la BD sin +52 para facilitar búsqueda)
+    const telefonoBusqueda = telefono.replace(/\D/g, '').slice(-10) // Últimos 10 dígitos
+    
+    if (!telefonoBusqueda) return
+    
     setBuscandoCliente(true)
     const { data } = await supabase
       .from('clientes')
       .select('*')
-      .eq('telefono', telefono.trim())
+      .eq('telefono', telefonoBusqueda)
       .maybeSingle()
 
     if (data) {
       setClienteEncontrado(data)
       setNombreCliente(data.nombre)
       setEmailCliente(data.email || '')
+      
+      // Mostrar el teléfono con prefijo si estaba incompleto
+      if (data.telefono.length === 10 && !telefonoConPrefijo.includes('+')) {
+        const nuevoConPrefijo = '+52' + data.telefono
+        setTelefonoConPrefijo(nuevoConPrefijo)
+      }
     } else {
       setClienteEncontrado(null)
     }
     setBuscandoCliente(false)
   }
 
+  // Nueva función para manejar el teléfono con prefijo automático
+  function manejarTelefono(value) {
+    // Limpiar caracteres no numéricos
+    const soloNumeros = value.replace(/\D/g, '')
+    
+    let telefonoFinal = value
+    
+    // Si tiene exactamente 10 dígitos y no tiene prefijo internacional
+    if (soloNumeros.length === 10 && !value.startsWith('+')) {
+      // Agregar prefijo de México
+      telefonoFinal = '+52' + soloNumeros
+      setTelefonoConPrefijo(telefonoFinal)
+    } else if (value.startsWith('+52')) {
+      // Ya tiene prefijo, mantenerlo
+      telefonoFinal = value
+      setTelefonoConPrefijo(telefonoFinal)
+    } else if (value.startsWith('+') && value.length > 2) {
+      // Tiene otro prefijo internacional (+1, +34, etc.)
+      setTelefonoConPrefijo(value)
+    } else {
+      // No cumple condiciones, limpiar
+      setTelefonoConPrefijo('')
+    }
+    
+    // Actualizar el estado normal también (para mostrar lo que el usuario escribió)
+    setTelefono(value)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    setLoading(true)
     setError('')
 
+    // Validaciones
     if (!nombreCliente.trim() || !telefono.trim()) {
       setError('El nombre y teléfono del cliente son obligatorios.')
+      setLoading(false)
       return
     }
 
     if (!equipoMarca.trim() || !equipoModelo.trim() || !falla.trim()) {
       setError('Completa la marca, modelo y falla reportada del equipo.')
+      setLoading(false)
       return
     }
 
@@ -64,6 +113,10 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10);
 
     if (!clienteId) {
+      // Cliente nuevo, crearlo con el teléfono limpio (sin prefijos)
+      // Esto facilita búsqueda y comparaciones futuras
+      const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10)
+
       const { data: nuevoCliente, error: errCliente } = await supabase
         .from('clientes')
         .insert({ nombre: nombreCliente.trim(), telefono: telefonolimpio.trim(), email: emailCliente.trim() || null })
@@ -73,12 +126,22 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       if (errCliente) {
         setError('No se pudo registrar al cliente: ' + errCliente.message)
         setGuardando(false)
+        setLoading(false)
         return
       }
       clienteId = nuevoCliente.id
+    } else {
+      // Cliente existente, actualizar datos si cambió
+      await supabase
+        .from('clientes')
+        .update({ 
+          nombre: nombreFinal,
+          email: emailCliente.trim() || null
+        })
+        .eq('id', clienteId)
     }
 
-    // 2. Crear el ticket
+    // 2. Crear el ticket con los nuevos campos (serial e IMEI)
     const codigo = generarCodigoTicket()
     const { data: nuevoTicket, error: errTicket } = await supabase
       .from('tickets')
@@ -87,6 +150,8 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
         cliente_id: clienteId,
         equipo_marca: equipoMarca.trim(),
         equipo_modelo: equipoModelo.trim(),
+        numero_serie: numero_serie.trim() || null,  // 👈 NUEVO
+        imei: imei.trim() || null,                   // 👈 NUEVO
         falla_reportada: falla.trim(),
         costo_total: costoTotal ? parseFloat(costoTotal) : null,
         abono: abono ? parseFloat(abono) : 0,
@@ -97,16 +162,24 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     if (errTicket) {
       setError('No se pudo crear el ticket: ' + errTicket.message)
       setGuardando(false)
+      setLoading(false)
       return
     }
 
+    setLoading(false)
+
     // 3. Si hubo abono inicial, registrarlo también en la tabla de pagos
     if (abono && parseFloat(abono) > 0) {
-      await supabase.from('pagos').insert({
+      const { error: pagoError } = await supabase.from('pagos').insert({
         ticket_id: nuevoTicket.id,
         monto: parseFloat(abono),
         tipo: 'abono',
       })
+      
+      if (pagoError) {
+        console.warn('Error al registrar abono:', pagoError.message)
+        // Advertencia no crítica, el ticket se creó correctamente
+      }
     }
 
     // 4. Generar el QR con la URL pública de seguimiento
@@ -117,7 +190,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       id: nuevoTicket.id,
       codigo: nuevoTicket.codigo,
       telefono: telefono.trim(),
-      nombreCliente: nombreCliente.trim(),
+      nombreCliente: nombreFinal,
       equipo: `${equipoMarca.trim()} ${equipoModelo.trim()}`,
       trabajador: usuarioNombre || '—',
     })
@@ -167,8 +240,17 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
   }
 
   function enviarWhatsApp() {
+    // El número para WhatsApp necesita el código de país completo
+    let numeroWhatsapp = ticketCreado.telefono
+    
+    // Si tiene 10 dígitos, agregar +52
+    const soloNumeros = numeroWhatsapp.replace(/\D/g, '')
+    if (soloNumeros.length === 10 && !numeroWhatsapp.startsWith('+52')) {
+      numeroWhatsapp = '+52' + soloNumeros
+    }
+    
     const link = linkWhatsAppEstatus({
-      telefono: ticketCreado.telefono,
+      telefono: numeroWhatsapp,
       nombreCliente: ticketCreado.nombreCliente,
       equipo: ticketCreado.equipo,
       estado: 'recibido',
@@ -250,9 +332,9 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <input
                 id="telefono"
                 value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
+                onChange={(e) => manejarTelefono(e.target.value)}
                 onBlur={buscarClientePorTelefono}
-                placeholder="Ej. 4491234567"
+                placeholder="Ej. 4491234567 (+52 se agrega automático)"
               />
               {/* Feedback visual si hay prefijo +52 */}
               {telefonoConPrefijo && telefonoConPrefijo !== telefono && (
@@ -298,10 +380,46 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
               <label htmlFor="modelo">Modelo</label>
               <input id="modelo" value={equipoModelo} onChange={(e) => setEquipoModelo(e.target.value)} placeholder="Ej. Galaxy A54" />
             </div>
+            {/* 👇 CAMPOS NUEVOS: SERIAL Y IMEI */}
+            <div className="field">
+              <label htmlFor="numero_serie">Número de Serie</label>
+              <input 
+                id="numero_serie"
+                type="text"
+                value={numero_serie}
+                onChange={(e) => setNumeroSerie(e.target.value)}
+                maxLength={50}
+                placeholder="Ej: ABC123XYZ789"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="imei">IMEI</label>
+              <input
+                id="imei"
+                type="tel"
+                value={imei}
+                onChange={(e) => {
+                  const valor = e.target.value.replace(/\D/g, '');
+                  if (valor.length <= 17) setImei(valor);
+                }}
+                maxLength={17}
+                placeholder="15-17 dígitos"
+                title="Ingresa solo números (15-17 dígitos)"
+              />
+              <p className="text-xs text-gray-500 mt-1" style={{marginTop: '4px', fontSize: '11px'}}>
+                Estándar GSM. Solo ingresa números.
+              </p>
+            </div>
           </div>
           <div className="field">
             <label htmlFor="falla">Falla reportada</label>
-            <textarea id="falla" rows={3} value={falla} onChange={(e) => setFalla(e.target.value)} placeholder="Descripción de lo que reporta el cliente" />
+            <textarea 
+              id="falla" 
+              rows={3} 
+              value={falla} 
+              onChange={(e) => setFalla(e.target.value)} 
+              placeholder="Descripción de lo que reporta el cliente" 
+            />
           </div>
         </div>
 
