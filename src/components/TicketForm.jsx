@@ -18,6 +18,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
 
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [telefonoConPrefijo, setTelefonoConPrefijo] = useState('');
 
   // Ticket recién creado, para mostrar la pantalla de QR + WhatsApp
   const [ticketCreado, setTicketCreado] = useState(null)
@@ -50,6 +51,7 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
       setError('El nombre y teléfono del cliente son obligatorios.')
       return
     }
+
     if (!equipoMarca.trim() || !equipoModelo.trim() || !falla.trim()) {
       setError('Completa la marca, modelo y falla reportada del equipo.')
       return
@@ -59,11 +61,12 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
 
     // 1. Obtener o crear cliente
     let clienteId = clienteEncontrado?.id
+    const telefonoLimpio = telefono.replace(/\D/g, '').slice(-10);
 
     if (!clienteId) {
       const { data: nuevoCliente, error: errCliente } = await supabase
         .from('clientes')
-        .insert({ nombre: nombreCliente.trim(), telefono: telefono.trim(), email: emailCliente.trim() || null })
+        .insert({ nombre: nombreCliente.trim(), telefono: telefonolimpio.trim(), email: emailCliente.trim() || null })
         .select()
         .single()
 
@@ -174,6 +177,27 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
     window.open(link, '_blank')
   }
 
+  // Manejar teléfono con +52 automático
+  function manejarTelefono(value) {
+    const soloNumeros = value.replace(/\D/g, '');
+    
+    let telefonoFinal = value;
+    
+    // Si son 10 dígitos exactos y no tiene prefijo internacional
+    if (soloNumeros.length === 10 && !value.startsWith('+')) {
+      telefonoFinal = '+52' + soloNumeros;
+      setTelefonoConPrefijo(telefonoFinal);
+    } else if (value.startsWith('+52')) {
+      setTelefonoConPrefijo(value);
+    } else if (value.startsWith('+')) {
+      setTelefonoConPrefijo(value);
+    } else {
+      setTelefonoConPrefijo('');
+    }
+    
+    setTelefono(value);
+  }
+
   if (ticketCreado) {
     return (
       <div className="page">
@@ -230,6 +254,12 @@ export default function TicketForm({ onCreated, usuarioNombre }) {
                 onBlur={buscarClientePorTelefono}
                 placeholder="Ej. 4491234567"
               />
+              {/* Feedback visual si hay prefijo +52 */}
+              {telefonoConPrefijo && telefonoConPrefijo !== telefono && (
+                <p className="text-muted text-sm" style={{ marginTop: '4px', fontSize: '12px' }}>
+                  📱 Guardando como: {telefonoConPrefijo}
+                </p>
+              )}
               {buscandoCliente && <span className="text-muted">Buscando cliente...</span>}
               {clienteEncontrado && (
                 <span className="text-muted">Cliente existente encontrado: se usarán sus datos.</span>
