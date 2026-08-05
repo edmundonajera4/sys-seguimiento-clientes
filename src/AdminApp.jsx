@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
-import Dashboard from './Dashboard'
 import TicketList from './components/TicketList'
 import TicketForm from './components/TicketForm'
 import TicketDetail from './components/TicketDetail'
@@ -20,30 +19,22 @@ export default function AdminApp() {
       setUser(session?.user || null)
       setLoading(false)
     }
-
     checkSession()
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando...</div>
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando...</div>
+  if (!user) return <Navigate to="/login" replace />
 
   return (
     <BrowserRouter>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/" element={<Navigate to="/tickets" />} />
+        <Route path="/dashboard" element={<TicketsStats />} />
         <Route path="/tickets" element={<TicketList />} />
         <Route path="/tickets/nuevo" element={<TicketForm onCreated={(id) => window.location.href = '/tickets/' + id} usuarioNombre={user.email} />} />
         <Route path="/tickets/:id" element={<TicketDetail />} />
@@ -52,7 +43,7 @@ export default function AdminApp() {
         <Route path="/admins" element={<GestionAdmins />} />
         <Route path="/password" element={<PasswordChange />} />
         <Route path="/logout" element={<Logout />} />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/tickets" />} />
       </Routes>
     </BrowserRouter>
   )
@@ -78,41 +69,29 @@ function PasswordChange() {
     e.preventDefault()
     setError('')
     setSuccess(false)
-
     const { error } = await supabase.auth.updateUser({ password: newPassword })
-    if (error) {
-      setError(error.message)
-    } else {
-      setSuccess(true)
-      setNewPassword('')
-    }
+    if (error) setError(error.message)
+    else { setSuccess(true); setNewPassword('') }
   }
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h1>Cambiar contraseña</h1>
-      </div>
+      <div className="page-header"><h1>Cambiar contraseña</h1></div>
       <div className="card" style={{ maxWidth: 420 }}>
         <form onSubmit={handleSubmit}>
           {error && <p style={{ color: '#dc2626' }}>{error}</p>}
           {success && <p style={{ color: '#16a34a' }}>¡Contraseña cambiada!</p>}
-          
           <div className="field">
             <label htmlFor="newPassword">Nueva contraseña</label>
-            <input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              minLength={6}
-              required
-            />
+            <input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} required />
           </div>
-          
           <button type="submit" className="btn btn-primary">Cambiar contraseña</button>
         </form>
       </div>
     </div>
   )
+}
+
+function TicketsStats() {
+  return <Navigate to="/tickets" replace />
 }
