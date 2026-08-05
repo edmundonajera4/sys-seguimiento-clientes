@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
-import Navbar from './components/Navbar'
-import Dashboard from './components/Dashboard'
-import TicketList from './components/TicketList'
-import TicketForm from './components/TicketForm'
-import TicketDetail from './components/TicketDetail'
-import Balance from './components/Balance'
-import GestionAdmins from './components/GestionAdmins'
-import BalanceHistorico from './components/BalanceHistorico'
+import { supabase } from './supabaseClient'
+import Navbar from './Navbar'
+import Dashboard from './Dashboard'
+import TicketList from './TicketList'
+import TicketForm from './TicketForm'
+import TicketDetail from './TicketDetail'
+import Balance from './Balance'
+import GestionAdmins from './GestionAdmins'
+import BalanceHistorico from './BalanceHistorico'
 
 export default function AdminApp() {
   const [user, setUser] = useState(null)
@@ -95,8 +95,8 @@ function PasswordChange() {
       </div>
       <div className="card" style={{ maxWidth: 420 }}>
         <form onSubmit={handleSubmit}>
-          {error && <p className="text-error" style={{ color: '#dc2626' }}>{error}</p>}
-          {success && <p className="text-success" style={{ color: '#16a34a' }}>¡Contraseña cambiada!</p>}
+          {error && <p style={{ color: '#dc2626' }}>{error}</p>}
+          {success && <p style={{ color: '#16a34a' }}>¡Contraseña cambiada!</p>}
           
           <div className="field">
             <label htmlFor="newPassword">Nueva contraseña</label>
