@@ -15,32 +15,31 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const { data, error: err } = await supabase.auth.signInWithPassword({
+    const { error: err } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password.trim(),
     })
 
     if (err) {
-      setError(err.message || 'Error al iniciar sesión')
+      setError(err.message || 'Correo o contraseña incorrectos.')
       setLoading(false)
       return
     }
 
-    // Login exitoso, redirigir a tickets
+    // Login exitoso → redirigir a tickets
     navigate('/tickets')
   }
 
-  async function handleSignUp() {
-    setError('No puedes crear usuarios desde aquí. Contacta al administrador.')
-  }
-
   return (
-    <div className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <div className="card" style={{ maxWidth: 420, width: '100%' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>{NEGOCIO.nombre}</h1>
-        <p className="text-muted" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Inicia sesión para continuar</p>
+    <div className="login-wrap">
+      <div className="login-card">
+        {/* Logo */}
+        <div className="login-logo">🔧</div>
 
-        {error && <div className="form-error" style={{ color: '#dc2626', marginBottom: '1rem' }}>{error}</div>}
+        <h1>{NEGOCIO.nombre}</h1>
+        <p className="subtitle">Inicia sesión para continuar</p>
+
+        {error && <div className="form-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="field">
@@ -50,8 +49,10 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="usuario@ejemplo.com"
               required
               autoComplete="email"
+              autoFocus
             />
           </div>
 
@@ -62,18 +63,31 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
               required
               autoComplete="current-password"
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-            {loading ? 'Iniciando sesión...' : 'Entrar'}
+          <button
+            type="submit"
+            className="btn btn-primary w-full"
+            disabled={loading}
+            style={{ width: '100%', marginTop: '4px', padding: '11px' }}
+          >
+            {loading ? (
+              <>
+                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                Verificando…
+              </>
+            ) : (
+              'Entrar'
+            )}
           </button>
         </form>
 
-        <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
-          ¿No tienes cuenta? Contáctate con el administrador
+        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', color: 'var(--text-3)' }}>
+          ¿Sin cuenta? Contacta al administrador del sistema.
         </p>
       </div>
     </div>

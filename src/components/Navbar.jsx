@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../AuthProvider'
 import { NEGOCIO } from '../config'
@@ -9,6 +9,7 @@ export default function Navbar() {
   const { user } = auth || {}
   const [isAdmin, setIsAdmin] = useState(false)
   const [loadingRole, setLoadingRole] = useState(true)
+  const location = useLocation()
 
   useEffect(() => {
     async function checkUserRole() {
@@ -17,7 +18,6 @@ export default function Navbar() {
         setLoadingRole(false)
         return
       }
-
       try {
         const { data, error } = await supabase
           .from('usuarios')
@@ -44,36 +44,54 @@ export default function Navbar() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    window.location.href = '/'
+    window.location.href = '/login'
+  }
+
+  // Helper para marcar el link activo
+  function linkClass(path) {
+    const isActive = location.pathname === path || location.pathname.startsWith(path + '/')
+    return `nav-link${isActive ? ' active' : ''}`
   }
 
   return (
     <nav className="navbar">
-      <div className="navbar-brand">
-        <Link to="/">
-          <h1>{NEGOCIO.nombre}</h1>
-        </Link>
-      </div>
+      {/* ── Brand ──────────────────────────────── */}
+      <Link to="/tickets" className="navbar-brand">
+        <div className="navbar-brand-icon">🔧</div>
+        <span className="navbar-brand-text">{NEGOCIO.nombre}</span>
+      </Link>
 
+      {/* ── Links centrales ────────────────────── */}
       {user ? (
-        <div className="navbar-menu">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/tickets">Tickets</Link>
-          <Link to="/balance">Balance</Link>
-          
+        <div className="navbar-links">
+          <Link to="/tickets"   className={linkClass('/tickets')}>📋 Tickets</Link>
+          <Link to="/balance"   className={linkClass('/balance')}>💰 Balance</Link>
           {!loadingRole && isAdmin && (
-            <Link to="/balance-historico" className="admin-link">
-              Balance Histórico
-            </Link>
+            <>
+              <Link to="/balance-historico" className={linkClass('/balance-historico')}>📊 Histórico</Link>
+              <Link to="/admins"            className={linkClass('/admins')}>👥 Usuarios</Link>
+            </>
           )}
-          
-          <Link to="/password">Contraseña</Link>
-          <button onClick={handleLogout}>Salir</button>
         </div>
       ) : (
-        <div className="navbar-menu">
-          <Link to="/login">Login</Link>
+        <div className="navbar-links" />
+      )}
+
+      {/* ── Usuario + Logout ───────────────────── */}
+      {user ? (
+        <div className="navbar-user">
+          <span className="navbar-user-email">{user.email}</span>
+          <Link to="/password" className="nav-link" style={{ padding: '5px 10px', fontSize: '13px' }}>
+            ⚙️
+          </Link>
+          <button className="btn-logout" onClick={handleLogout}>
+            Salir
+          </button>
         </div>
+      ) : (
+        <Link to="/login" className="nav-link">
+          Iniciar sesión
+        </Link>
       )}
     </nav>
   )
