@@ -1,5 +1,7 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
+import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
 import Login from './components/Login'
 import TicketList from './components/TicketList'
