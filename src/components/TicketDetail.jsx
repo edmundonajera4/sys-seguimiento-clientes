@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, ESTADOS, linkWhatsAppEstatus } from '../supabaseClient'
 
-export default function TicketDetail({ ticketId, onBack }) {
+export default function TicketDetail() {
+  const { id } = useParams()
+  const ticketId = id
+  const navigate = useNavigate()
+  function onBack() { navigate('/tickets') }
   const [ticket, setTicket] = useState(null)
   const [pagos, setPagos] = useState([])
   const [costos, setCostos] = useState([])
@@ -23,7 +28,7 @@ export default function TicketDetail({ ticketId, onBack }) {
     setLoading(true)
     const [{ data: t }, { data: p }, { data: c }] = await Promise.all([
       supabase.from('tickets').select('*, clientes(nombre, telefono, email)').eq('id', ticketId).single(),
-      supabase.from('pagos').select('*').eq('ticket_id', ticketId).order('fecha_pago', { ascending: false }),
+      supabase.from('pagos').select('*').eq('ticket_id', ticketId).order('fecha', { ascending: false }),
       supabase.from('costos_refaccion').select('*').eq('ticket_id', ticketId),
     ])
     setTicket(t)
@@ -187,7 +192,7 @@ export default function TicketDetail({ ticketId, onBack }) {
             )}
             {pagos.map((p) => (
               <tr key={p.id}>
-                <td>{new Date(p.fecha_pago).toLocaleDateString('es-MX')}</td>
+                <td>{new Date(p.fecha).toLocaleDateString('es-MX')}</td>
                 <td style={{ textTransform: 'capitalize' }}>{p.tipo.replace('_', ' ')}</td>
                 <td>${Number(p.monto).toFixed(2)}</td>
               </tr>
