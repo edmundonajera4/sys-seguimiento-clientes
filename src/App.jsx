@@ -10,6 +10,7 @@ import TicketDetail from './components/TicketDetail'
 import Balance from './components/Balance'
 import GestionAdmins from './components/GestionAdmins'
 import BalanceHistorico from './components/BalanceHistorico'
+import PublicStatus from './components/PublicStatus'
 
 export default function App() {
   const auth = useAuth()
@@ -23,6 +24,7 @@ export default function App() {
       <Routes>
         {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
+        <Route path="/estado/:codigo" element={<PublicStatus />} />
         
         {/* Rutas protegidas */}
         {!user ? (
