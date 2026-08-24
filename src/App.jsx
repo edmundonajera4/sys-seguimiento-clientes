@@ -11,6 +11,7 @@ import Balance from './components/Balance'
 import GestionAdmins from './components/GestionAdmins'
 import BalanceHistorico from './components/BalanceHistorico'
 import PublicStatus from './components/PublicStatus'
+import ActualizarPassword from './components/ActualizarPassword'
 
 export default function App() {
   const auth = useAuth()
@@ -25,6 +26,7 @@ export default function App() {
         {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/estado/:codigo" element={<PublicStatus />} />
+        <Route path="/actualizar-password" element={<ActualizarPassword />} />
         
         {/* Rutas protegidas */}
         {!user ? (
