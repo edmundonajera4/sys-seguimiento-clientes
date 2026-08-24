@@ -30,6 +30,7 @@ Este proyecto incluye migraciones en `supabase/migrations/` que debes correr en 
 
 - `002_fecha_costos_refaccion.sql` — agrega fecha a los costos de refacción (para el Balance mensual).
 - `003_permisos_vista_saldo.sql` — asegura que la página pública pueda leer el saldo del ticket.
+- `011_proteger_consulta_publica_tickets.sql` — protege el seguimiento público, reduce los datos expuestos y aplica el límite de consultas por IP. Esta migración es obligatoria antes de desplegar el nuevo seguimiento público.
 
 ## 4. Crear tu primer usuario de staff
 
@@ -86,8 +87,11 @@ Además, **nunca se genera ni se envía una contraseña en texto plano**: Supaba
    SUPABASE_URL = https://tu-proyecto.supabase.co
    SUPABASE_SERVICE_ROLE_KEY = tu-secret-key
    SUPABASE_ANON_KEY = tu-publishable-key
+   PUBLIC_LOOKUP_RATE_LIMIT_SALT = una-cadena-larga-aleatoria-y-secreta
    ```
    (Nota: sin el prefijo `VITE_` — estas son solo para la función de servidor, nunca se envían al navegador.)
+
+   `PUBLIC_LOOKUP_RATE_LIMIT_SALT` debe ser un secreto único de al menos 32 caracteres. Se usa para almacenar un hash no reversible de la IP en el límite de consultas públicas; nunca lo expongas al navegador.
 3. Vuelve a desplegar el sitio (un nuevo `git push` es suficiente) para que la función tenga esas variables disponibles.
 
 ### Configuración necesaria en Supabase (una sola vez)
