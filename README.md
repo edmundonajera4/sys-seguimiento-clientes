@@ -1,135 +1,226 @@
-# Panel de administración — Taller de reparación
+# Sistema de seguimiento para taller de reparación
 
-Panel interno para dar de alta tickets, actualizar su estado, registrar pagos/abonos,
-y ver el balance mensual del negocio.
+Aplicación web para administrar la recepción, reparación, cobro y entrega de equipos. El personal opera un panel privado y cada cliente puede consultar el estado de su equipo desde un enlace o código QR.
 
-## 1. Configurar variables de entorno
+## Objetivo
 
-Copia `.env.example` a `.env` y coloca los datos de tu proyecto de Supabase
-(los encuentras en Project Settings → API):
+Centralizar el trabajo diario de un taller de reparación:
 
+- Registrar clientes, equipos y fallas reportadas.
+- Dar seguimiento a cada reparación mediante un ticket único.
+- Controlar estados, pagos, abonos y costos de refacciones.
+- Medir ingresos, costos y ganancia mensual.
+- Compartir un seguimiento público seguro por QR o WhatsApp.
+
+## Tecnologías
+
+| Componente | Tecnología |
+| --- | --- |
+| Interfaz | React 18 + Vite |
+| Navegación | React Router |
+| Base de datos y autenticación | Supabase |
+| Código QR | `qrcode` |
+| Funciones de servidor | Netlify Functions |
+| Hosting recomendado | Netlify |
+
+## Funcionalidades disponibles
+
+### Panel privado
+
+El panel requiere una sesión de Supabase y que el usuario exista en la tabla `usuarios`.
+
+- **Inicio de sesión:** acceso del personal mediante correo y contraseña.
+- **Listado de tickets:** consulta todos los equipos y busca por código, cliente, marca, modelo, número de serie, IMEI o falla.
+- **Alta de ticket:** localiza o crea clientes por teléfono, registra marca, modelo, serie, IMEI, falla, costo estimado y abono inicial.
+- **Código QR:** al crear un ticket genera un QR para imprimir y un enlace público para seguimiento.
+- **WhatsApp:** prepara mensajes de seguimiento con el enlace público. Los números mexicanos de diez dígitos reciben el prefijo `+52` automáticamente.
+- **Detalle del ticket:** permite cambiar el estado, registrar pagos y costos de refacciones, copiar el enlace público y reenviar el estado por WhatsApp.
+- **Balance mensual:** muestra ingresos por pagos, costos de refacciones, ganancia neta, entregas y ticket promedio del mes actual.
+- **Balance histórico:** disponible para administradores; consolida los balances por mes.
+- **Gestión de usuarios:** un administrador puede invitar administradores o técnicos mediante correo. La persona invitada define su propia contraseña; el taller nunca conoce ni almacena contraseñas.
+- **Cambio de contraseña:** un usuario autenticado puede actualizar su contraseña desde el panel.
+
+### Seguimiento público del cliente
+
+La ruta pública es `/estado/:codigo` y se obtiene al escanear el QR o abrir el enlace de WhatsApp.
+
+El cliente puede ver únicamente:
+
+- Estado de la reparación.
+- Marca y modelo del equipo.
+- Fecha de recepción.
+- Costo total, total pagado y saldo, cuando el costo ya fue definido.
+
+No se exponen nombre, teléfono, falla reportada, notas internas, serial, IMEI ni el historial individual de pagos.
+
+La consulta está protegida por una Netlify Function y limitada a **10 solicitudes por IP cada 10 minutos**. La base conserva durante un máximo de 24 horas un hash con salt de la IP, nunca la IP real.
+
+## Rutas
+
+| Ruta | Acceso | Descripción |
+| --- | --- | --- |
+| `/login` | Público | Inicio de sesión del personal. |
+| `/actualizar-password` | Público con enlace válido de Supabase | Activación o actualización de contraseña tras una invitación. |
+| `/estado/:codigo` | Público | Seguimiento seguro del ticket. |
+| `/tickets` | Personal autenticado | Listado y búsqueda de tickets. |
+| `/tickets/nuevo` | Personal autenticado | Registro de un ticket. |
+| `/tickets/:id` | Personal autenticado | Detalle, pagos, costos y estado del ticket. |
+| `/balance` | Personal autenticado | Balance del mes actual. |
+| `/balance-historico` | Administrador | Balance consolidado por mes. |
+| `/admins` | Administrador | Invitación de nuevos miembros del personal. |
+| `/password` | Personal autenticado | Cambio de contraseña. |
+
+## Requisitos
+
+- Node.js 18 o superior.
+- Un proyecto de Supabase con las tablas base del taller (`usuarios`, `clientes`, `tickets`, `pagos` y `costos_refaccion`).
+- Una cuenta de Netlify para las funciones de invitación y consulta pública protegida.
+
+## Configuración local
+
+### 1. Instalar dependencias
+
+```bash
+npm install
 ```
-cp .env.example .env
-```
 
-```
+### 2. Crear el archivo `.env`
+
+Crea un archivo `.env` en la raíz del proyecto. Estas claves son públicas para el navegador y corresponden a la anon key de Supabase; nunca coloques aquí la service-role key.
+
+```env
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu-anon-key-publica
 ```
 
-## 2. Instalar dependencias
+### 3. Iniciar el proyecto
 
-```
-npm install
-```
-
-## 3. Aplicar migraciones adicionales
-
-Este proyecto incluye migraciones en `supabase/migrations/` que debes correr en el
-**SQL Editor** de Supabase, en orden, si tu proyecto no las tiene ya:
-
-- `002_fecha_costos_refaccion.sql` — agrega fecha a los costos de refacción (para el Balance mensual).
-- `003_permisos_vista_saldo.sql` — asegura que la página pública pueda leer el saldo del ticket.
-- `011_proteger_consulta_publica_tickets.sql` — protege el seguimiento público, reduce los datos expuestos y aplica el límite de consultas por IP. Esta migración es obligatoria antes de desplegar el nuevo seguimiento público.
-
-## 4. Crear tu primer usuario de staff
-
-El login usa Supabase Auth. Para crear tu primera cuenta:
-
-1. Ve a tu proyecto en Supabase → **Authentication → Users → Add user**.
-2. Crea el usuario con tu correo y una contraseña.
-3. Copia el **User UID** que se generó.
-4. Ve a **Table Editor → usuarios** y crea una fila:
-   - `nombre`: tu nombre
-   - `rol`: `admin`
-   - `auth_user_id`: pega el UID que copiaste
-
-Repite este proceso por cada técnico que necesite acceso al panel.
-
-## 5. Correr en desarrollo
-
-```
+```bash
 npm run dev
 ```
 
-Abre `http://localhost:5173` e inicia sesión con el correo/contraseña que creaste.
+Abre `http://localhost:5173`.
 
-## 6. Desplegar (hosting)
+### 4. Generar una compilación de producción
 
-Este proyecto está listo para desplegarse en **Vercel** o **Netlify** (plan gratuito):
+```bash
+npm run build
+```
 
-1. Sube este proyecto a un repositorio de GitHub.
-2. En Vercel/Netlify, importa el repositorio.
-3. Agrega las mismas variables de entorno (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) en la configuración del proyecto.
-4. Despliega. Vite se encarga del build automáticamente (`npm run build`).
+El resultado se genera en `dist/`.
 
-## Qué incluye este proyecto
+## Configuración de Supabase
 
-**Panel administrativo** (requiere login, todo bajo `/`):
-- **Login** — autenticación con Supabase Auth, solo staff registrado en la tabla `usuarios` puede entrar.
-- **Tickets** — lista de todos los equipos, con filtro por estado y búsqueda por código/cliente/modelo.
-- **Nuevo ticket** — busca al cliente por teléfono (o lo crea si es nuevo), registra el equipo, la falla, el costo estimado y un abono inicial. Al crear el ticket, genera automáticamente el QR de seguimiento y permite imprimirlo o enviarlo por WhatsApp al cliente.
-- **Detalle del ticket** — cambia el estado, registra pagos adicionales (con aviso automático cuando el saldo llega a $0), registra costos de refacción, y permite reenviar el estatus actual por WhatsApp o copiar el enlace público.
-- **Administradores** (solo visible para el rol `admin`) — invita por correo a nuevos administradores o técnicos. La persona recibe un email para crear su propia contraseña; nadie en el taller la ve ni la define.
-- **Recuperación de contraseña** — desde el login, cualquier usuario de staff puede pedir un enlace de recuperación por correo.
+### Migraciones
 
-## Cómo funciona la invitación de administradores (y por qué)
+Las migraciones incluidas complementan un esquema base ya existente. Ejecuta los archivos de `supabase/migrations/` en orden numérico en el **SQL Editor** de Supabase, especialmente si estás creando un ambiente nuevo.
 
-Invitar usuarios requiere la **Secret key** de Supabase — la misma que nunca debe estar en el navegador, porque evade RLS. Por eso esta función vive en una **Netlify Function** (`netlify/functions/invite-admin.js`), que corre en el servidor, no en el navegador.
+| Migración | Propósito |
+| --- | --- |
+| `002_fecha_costos_refaccion.sql` | Fecha e índice para los costos de refacciones. |
+| `003_permisos_vista_saldo.sql` | Permisos relacionados con el saldo público original. |
+| `004_permiso_lectura_costos_refaccion.sql` | Permisos de lectura para costos de refacción. |
+| `005_restriccion_lectura_publica.sql` | Primera restricción de lectura pública. |
+| `006_correccion_rls_y_rpc_publico.sql` | Corrección de RLS y RPC públicas previas. |
+| `007_agregar_serial_imei.sql` | Campos e índices para serial e IMEI. |
+| `008_actualizar_rpc_para_incluir_serial_imei.sql` | Actualización histórica de RPC. |
+| `009_vista_balance_mensual.sql` | Vista y permisos del balance mensual. |
+| `010_get_balance_historico_admin.sql` | RPC de balance histórico. |
+| `011_proteger_consulta_publica_tickets.sql` | Protección actual del seguimiento público, datos mínimos y límite por IP. **Obligatoria** para producción. |
 
-Además, **nunca se genera ni se envía una contraseña en texto plano**: Supabase le manda a la persona invitada un correo con un enlace para que ella misma cree su contraseña. Esto es más seguro que generar una contraseña y compartirla por correo o WhatsApp.
+> La migración 011 revoca el uso público de las RPC anteriores y las reemplaza por una RPC exclusiva para la función de servidor. No la omitas al desplegar esta versión.
 
-### Configuración necesaria en Netlify (una sola vez)
+### Primer usuario administrador
 
-1. Ve a tu proyecto en Supabase → **Settings → API Keys**, copia la **Secret key** (no la publicable).
-2. En Netlify → tu sitio → **Site settings → Environment variables**, agrega:
-   ```
-   SUPABASE_URL = https://tu-proyecto.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY = tu-secret-key
-   SUPABASE_ANON_KEY = tu-publishable-key
-   PUBLIC_LOOKUP_RATE_LIMIT_SALT = una-cadena-larga-aleatoria-y-secreta
-   ```
-   (Nota: sin el prefijo `VITE_` — estas son solo para la función de servidor, nunca se envían al navegador.)
+1. En Supabase abre **Authentication → Users → Add user**.
+2. Crea el usuario con correo y contraseña.
+3. Copia su **User UID**.
+4. En **Table Editor → usuarios**, crea una fila con:
 
-   `PUBLIC_LOOKUP_RATE_LIMIT_SALT` debe ser un secreto único de al menos 32 caracteres. Se usa para almacenar un hash no reversible de la IP en el límite de consultas públicas; nunca lo expongas al navegador.
-3. Vuelve a desplegar el sitio (un nuevo `git push` es suficiente) para que la función tenga esas variables disponibles.
+   | Campo | Valor |
+   | --- | --- |
+   | `nombre` | Nombre de la persona. |
+   | `rol` | `admin`. |
+   | `auth_user_id` | El UID creado en Supabase Auth. |
 
-### Configuración necesaria en Supabase (una sola vez)
+Después, el administrador puede invitar técnicos o más administradores desde el panel.
 
-Ve a **Authentication → URL Configuration** y configura:
-- **Site URL**: `https://tu-sitio.netlify.app`
-- **Redirect URLs**: agrega `https://tu-sitio.netlify.app/actualizar-password` (y si pruebas en local, también `http://localhost:5173/actualizar-password`)
+### URLs de autenticación
 
-Sin este paso, los enlaces de invitación y recuperación de contraseña no funcionarán correctamente en producción.
+En **Authentication → URL Configuration** configura:
 
-### Cómo probarlo
+```text
+Site URL: https://tu-sitio.netlify.app
+Redirect URLs:
+https://tu-sitio.netlify.app/actualizar-password
+http://localhost:5173/actualizar-password
+```
 
-1. Entra al panel con una cuenta que tenga `rol = admin` en la tabla `usuarios`.
-2. Ve a la pestaña **Administradores** → invita a alguien con su nombre, correo y rol.
-3. Esa persona recibe un correo, hace clic, define su contraseña, y ya puede entrar al panel.
-4. Para probar la recuperación: en el login, da clic en **"¿Olvidaste tu contraseña?"**, escribe un correo válido, y revisa la bandeja de entrada.
-- **Balance** — ingresos del mes con tabla detallada de pagos, costos de refacción con tabla detallada, ganancia neta, reparaciones entregadas y ticket promedio.
+La URL local solo es necesaria para pruebas. Cambia el dominio de producción por el definitivo.
 
-**Página pública** (sin login, en `/estado/:codigo`):
-- La ve el cliente al escanear el QR de su ticket.
-- Muestra el estado actual del equipo con un mensaje amigable, y si ya se definió un costo, el desglose de costo total, pagado y saldo pendiente.
-- Si el código no existe, muestra un mensaje claro en vez de un error técnico.
+## Configuración de Netlify
 
-## Generar el QR para imprimir
+Netlify ejecuta dos funciones de servidor:
 
-Ya no necesitas hacerlo manualmente: al crear un ticket nuevo, el panel genera el QR
-automáticamente y te lleva a una pantalla con dos botones:
+| Función | Uso |
+| --- | --- |
+| `invite-admin.cjs` | Verifica al administrador e invita personal mediante Supabase Auth. |
+| `public-ticket.cjs` | Consulta el estado público, aplica el límite por IP y devuelve los campos autorizados. |
 
-- **Imprimir ticket** — abre una ventana lista para imprimir con el QR, el código y el equipo.
-- **Enviar por WhatsApp** — abre WhatsApp (Web o app) con un mensaje prellenado que incluye
-  el enlace de seguimiento, listo para enviar al número del cliente.
+En **Site configuration → Environment variables**, configura estas variables de producción:
 
-También puedes reenviar el estatus más adelante (por ejemplo, cuando el equipo pase a "listo")
-desde el detalle del ticket, con el botón **"Enviar estatus por WhatsApp"**.
+```text
+SUPABASE_URL = https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY = tu-secret-key-de-supabase
+SUPABASE_ANON_KEY = tu-anon-key-publica
+PUBLIC_LOOKUP_RATE_LIMIT_SALT = un-secreto-unico-aleatorio-de-32-caracteres-o-mas
+```
 
-### Nota sobre números de teléfono
+Reglas importantes:
 
-El envío por WhatsApp usa enlaces `wa.me`, que no requieren API ni costo. Para armar el número
-completo, el sistema asume México (+52) si el teléfono capturado tiene 10 dígitos. Si tu taller
-recibe clientes de otros países, captura el teléfono incluyendo su código de país
-(por ejemplo `+1...`) al crear el ticket.
+- No uses el prefijo `VITE_` para esas variables; deben permanecer en el servidor.
+- Nunca expongas `SUPABASE_SERVICE_ROLE_KEY` en el código cliente, `.env` frontend ni repositorios.
+- `PUBLIC_LOOKUP_RATE_LIMIT_SALT` debe ser secreto y estable. Si se cambia, los hashes de IP anteriores dejan de coincidir, algo seguro pero que reinicia los límites activos.
+- El archivo [netlify.toml](netlify.toml) ya define el comando de build, la carpeta publicada y el directorio de funciones.
+
+## Despliegue
+
+1. Sube el proyecto a GitHub.
+2. Importa el repositorio en Netlify.
+3. Configura las variables de entorno anteriores.
+4. Ejecuta todas las migraciones necesarias en Supabase, incluida la `011`.
+5. Configura las URL de autenticación en Supabase.
+6. Despliega la aplicación.
+
+Netlify ejecutará `npm run build`, publicará `dist/` y habilitará las funciones dentro de `netlify/functions/`.
+
+## Personalización del negocio
+
+Actualiza [src/config.js](src/config.js) con los datos reales del taller. Estos valores aparecen en el ticket impreso y en la interfaz:
+
+```js
+export const NEGOCIO = {
+  nombre: 'Taller de reparación',
+  direccion: 'Calle Ejemplo #123, Col. Centro, Aguascalientes, Ags.',
+  telefono: '449 123 4567',
+  agradecimiento: '¡Gracias por confiar en nosotros para reparar tu equipo!',
+}
+```
+
+## Flujo de operación
+
+1. El personal inicia sesión.
+2. Registra un ticket y, si hace falta, un cliente nuevo.
+3. El sistema crea el código del ticket, QR y enlace de WhatsApp.
+4. El técnico actualiza el estado y registra pagos o refacciones conforme avanza el trabajo.
+5. El cliente consulta el enlace público sin necesidad de crear una cuenta.
+6. El administrador consulta balances e invita a nuevos miembros del equipo.
+
+## Verificación antes de publicar
+
+- Ejecuta `npm run build`.
+- Comprueba inicio de sesión, creación de ticket y detalle del ticket.
+- Verifica que el QR abra `/estado/:codigo` y que solo muestre los campos autorizados.
+- Prueba una invitación de usuario y la ruta `/actualizar-password`.
+- Confirma que Netlify tiene las cuatro variables de servidor configuradas.
+- Realiza hasta 10 consultas públicas válidas desde una IP; la siguiente debe recibir un límite temporal de consultas.
