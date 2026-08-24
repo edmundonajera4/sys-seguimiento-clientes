@@ -127,6 +127,7 @@ Las migraciones incluidas complementan un esquema base ya existente. Ejecuta los
 | `009_vista_balance_mensual.sql` | Vista y permisos del balance mensual. |
 | `010_get_balance_historico_admin.sql` | RPC de balance histórico. |
 | `011_proteger_consulta_publica_tickets.sql` | Protección actual del seguimiento público, datos mínimos y límite por IP. **Obligatoria** para producción. |
+| `012_restringir_balance_historico_a_admin.sql` | Valida el rol `admin` dentro de la RPC de balance histórico. **Obligatoria** para producción. |
 
 > La migración 011 revoca el uso público de las RPC anteriores y las reemplaza por una RPC exclusiva para la función de servidor. No la omitas al desplegar esta versión.
 
